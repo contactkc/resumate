@@ -28,14 +28,14 @@ const Home: NextPage = () => {
 
     const handleAnalyze = async () => {
     if (!resume || !jobDescription) {
-      toast.error("Please paste both your resume and the job description.");
+      toast.error("please paste both your resume and the job description.");
       return;
     }
-    setIsLoading(true);
+    setIsLoading(true); 
     setAnalysisResult(null);
 
     try {
-        const response = await fetch('/api', {
+        const response = await fetch('/api/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resume, jobDescription }),
@@ -48,7 +48,7 @@ const Home: NextPage = () => {
                     throw new Error(parsed.error || 'an unknown error occurred.');
                 } catch (e) {
                     console.error('Non-JSON error response:', text);
-                    throw new Error('server returned an error. See console for details.');
+                    throw new Error('server returned an error. see console for details.');
                 }
             }
 
@@ -57,7 +57,7 @@ const Home: NextPage = () => {
             } catch (e) {
                 const text = await response.text();
                 console.error('expected JSON but received:', text);
-                throw new Error('received non-JSON response from server. See console for details.');
+                throw new Error('received non-JSON response from server. see console for details.');
             }
       setAnalysisResult(result);
       toast.success("analysis complete!");

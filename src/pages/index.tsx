@@ -26,7 +26,7 @@ const Home: NextPage = () => {
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleAnalyze = async () => {
+    const handleAnalyze = async (): Promise<void> => {
     if (!resume || !jobDescription) {
       toast.error("please paste both your resume and the job description.");
       return;
@@ -40,32 +40,33 @@ const Home: NextPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resume, jobDescription }),
       });
-            let result: any;
             if (!response.ok) {
                 const text = await response.text();
                 try {
-                    const parsed = JSON.parse(text);
+                    const parsed = JSON.parse(text) as { error?: string };
                     throw new Error(parsed.error || 'an unknown error occurred.');
-                } catch (e) {
-                    console.error('Non-JSON error response:', text);
+                } catch (parseErr) {
+                    console.error('Non-JSON error response:', text, parseErr);
                     throw new Error('server returned an error. see console for details.');
                 }
             }
 
+            let result: AnalysisResult;
             try {
-                result = await response.json();
-            } catch (e) {
+                result = (await response.json()) as AnalysisResult;
+            } catch (parseErr: unknown) {
                 const text = await response.text();
-                console.error('expected JSON but received:', text);
+                console.error('expected JSON but received:', text, parseErr);
                 throw new Error('received non-JSON response from server. see console for details.');
             }
       setAnalysisResult(result);
       toast.success("analysis complete!");
 
-    } catch (error: any) {
-      console.error("analysis failed:", error);
-      toast.error(error.message);
-    } finally {
+        } catch (error: unknown) {
+            console.error("analysis failed:", error);
+            const message = error instanceof Error ? error.message : String(error);
+            toast.error(message);
+        } finally {
       setIsLoading(false);
     }
   };
@@ -78,6 +79,7 @@ const Home: NextPage = () => {
 
     return (
         <>
+            <Toaster position="top-right" />
             <div className="min-h-screen flex justify-center p-12">
                 <div className="max-w-2xl w-full">
                     <h1 className="text-2xl mb-2">resumate 📝</h1>

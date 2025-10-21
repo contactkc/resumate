@@ -78,25 +78,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(502).json({ error: `gemini API request failed with status ${response.status}` });
     }
 
-    const data = await response.json();
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const data = await response.json();
+  const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
 
     if (!responseText) {
       console.error('no content returned from Gemini:', JSON.stringify(data));
       return res.status(502).json({ error: 'invalid response from language model.' });
     }
 
-    let parsedJson;
+    type ModelOutput = {
+      matchScore: number;
+      summary: string;
+      strengths: string[];
+      improvements: string[];
+      keywordAnalysis: {
+        jobKeywords: string[];
+        resumeKeywords: string[];
+      };
+    };
+
     try {
-      parsedJson = JSON.parse(responseText);
-    } catch (err) {
-      console.error('failed to parse model output as JSON:', responseText);
+      const parsedJson = JSON.parse(responseText as string) as ModelOutput;
+      return res.status(200).json(parsedJson);
+    } catch (parseError: unknown) {
+      console.error('failed to parse model output as JSON:', responseText, parseError);
       return res.status(502).json({ error: 'model returned non-JSON output.' });
     }
-
-    return res.status(200).json(parsedJson);
-  } catch (error: any) {
-    console.error(error);
-    return res.status(500).json({ error: error.message || 'failed to get analysis.' });
+  } catch (error: unknown) {
+    console.error('review handler failed:', error);
+    const message = error instanceof Error ? error.message : 'failed to get analysis.';
+    return res.status(500).json({ error: message });
   }
 }
